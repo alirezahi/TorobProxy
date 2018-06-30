@@ -30,7 +30,7 @@ def http_request(http_content):
         output_html.close()
     elif code == 301 or code == 302:
         print('status: redirect')
-        url = msg.split("Location: ")[1].split("\n")[0]
+        url = msg.split("Location: ")[1].split("\r")[0]
         content = 'GET / HTTP/1.1\r\nHost: ' + url + '\r\n'
         http_request(content)
     elif code == 404:
