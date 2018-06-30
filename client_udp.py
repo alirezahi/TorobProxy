@@ -12,7 +12,7 @@ while True:
             content = 'GET / HTTP/1.1\r\nHost: aut.ac.ir\r\n'
             client.sendto((content.encode()), dstHost)
             print(time.time(), ' : send success')
-            print(time.time()," : ",client.recv(1024))
+            print(time.time(), " : ", client.recv(1024))
             time.sleep(3)
         except:
             traceback.print_exc()
