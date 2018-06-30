@@ -1,6 +1,5 @@
 import socket
 
-
 def find_after(s, first):
     try:
         start = s.index(first) + len(first)
@@ -16,6 +15,12 @@ def find_host(data):
         if host != '':
             return host
 
+
+def get_http_describes(data):
+    for line in data.splitlines():
+        if line[:3] == 'GET':
+            return line
+
 UDP_IP = "127.0.0.1"
 UDP_PORT = 5005
 
@@ -26,12 +31,13 @@ sock.bind((UDP_IP, UDP_PORT))
 while True:
     data, addr = sock.recvfrom(1024)  # buffer size is 1024 bytes
     data = data.decode('utf-8')
-    
+
     # convert data to string to use it
     data = str(data)
 
-    #find_between will find and extract the host address to use it
+    #find and extract the host address, method and http version to use it
     host = find_host(data)
+    http_describes = get_http_describes(data)
 
     # open a TCP connection to send HTTP request
     proxy_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
@@ -43,7 +49,8 @@ while True:
     proxy_socket.connect(server_address)
 
     # sending ideal request to the connected server
-    request_header = str('GET / HTTP/1.0\r\nHost: '+host+'\r\n\r\n').encode()
+    http_request = str(http_describes + '\r\nHost: ' + host + '\r\n\r\n')
+    request_header = http_request.encode()
     proxy_socket.send(request_header)
 
     response = ''
