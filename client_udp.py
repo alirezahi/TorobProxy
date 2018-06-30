@@ -2,23 +2,38 @@
 # a simple udp client
 import socket
 import traceback
+import ast
 
 client = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+client.settimeout(1)
 dstHost = ('127.0.0.1', 5005)
 
 
 def send_request(req):
-    try:
-        client.sendto(req, dstHost)
-        resp = ""
-        print('send success')
-        while True:
+    header = str({'seq': 0, 'end_flag': 1})
+    header += '\r\n*\r\n'
+    header = header.encode()
+    while True:
+        try:
+            client.sendto(header + req, dstHost)
             recv = client.recv(1024)
-            if not recv:
+            dict = ast.literal_eval(recv.decode())
+            print('a: ' + dict)
+            if 'ack' in dict.keys() and dict['ack'] == 0:
                 break
-            resp += recv.decode()
-    except:
-        traceback.print_exc()
+        except:
+            print("time out on receive ack packet")
+    print('send success', req)
+    resp = ""
+    # while True:
+    #     while True:
+    #         try:
+    #             recv = client.recv(1024)
+    #             print('a: ' + recv.decode())
+    #             resp += recv.decode()
+    #             break
+    #         except:
+    #             print("time out on receive packets")
     return resp
 
 
@@ -39,6 +54,7 @@ def get_host_and_path(url):
 
 def http_request(http_content):
     msg = send_request(http_content.encode())
+    return
     print("msg: ", msg)
     code = int(msg.split(" ")[1])
     if code == 200:
@@ -58,7 +74,7 @@ def http_request(http_content):
         output_html = open("index.html", "w")
         output_html.write("<html>"
                           "<head><meta charset=\"utf-8\"></head>"
-                          "<body>فایل مورد نظر یافت نشد :D</body>"
+                          "<body>فایل مورد نظر یافت نشد :(</body>"
                           "</html>")
         output_html.close()
     else:
@@ -66,12 +82,10 @@ def http_request(http_content):
         output_html = open("index.html", "w")
         output_html.write("<html>"
                           "<head><meta charset=\"utf-8\"></head>"
-                          "<body></body>"
+                          "<body>undefined http code :(</body>"
                           "</html>")
         output_html.close()
 
 
-header = '\r\n*\r\n'
 content = 'GET / HTTP/1.1\r\nHost: aut.ac.ir\r\n'
 http_request(content)
-
