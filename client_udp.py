@@ -10,19 +10,27 @@ dstHost = ('127.0.0.1', 5005)
 
 
 def send_request(req):
-    header = str({'seq': 0, 'end_flag': 1})
-    header += '\r\n*\r\n'
-    header = header.encode()
-    while True:
+    header_length = 30
+    packet_data_size = 1024 - header_length
+    data = []
+    for i in range(0, int(len(req)/packet_data_size) + 1):
+        data.append(req[i * packet_data_size: (i+1) * packet_data_size])
+    packet_index = 0
+    while packet_index <= int(len(req)/packet_data_size):
         try:
-            client.sendto(header + req, dstHost)
+            if packet_index == int(len(req)/packet_data_size):
+                end_flag = 1
+            else:
+                end_flag = 0
+            header = (str({'seq': packet_index % 2, 'end_flag': end_flag}) + '\r\n*\r\n').encode()
+            client.sendto(header + data[packet_index], dstHost)
             recv = client.recv(1024)
             dict = ast.literal_eval(recv.decode())
-            print('a: ' + dict)
-            if 'ack' in dict.keys() and dict['ack'] == 0:
-                break
+            print('answer: ' + dict)
+            if 'ack' in dict.keys() and dict['ack'] == packet_index % 2:
+                packet_index += 1
         except:
-            print("time out on receive ack packet")
+            print("time out on receive ack " + str(packet_index % 2) + " packet")
     print('send success', req)
     resp = ""
     # while True:
