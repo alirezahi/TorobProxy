@@ -1,4 +1,5 @@
 #! /usr/bin/python
+# -*- coding: utf-8 -*-
 # a simple udp client
 import socket
 import traceback
@@ -82,7 +83,7 @@ def http_request(http_content):
         output_html = open("index.html", "w")
         output_html.write("<html>"
                           "<head><meta charset=\"utf-8\"></head>"
-                          "<body>فایل مورد نظر یافت نشد :(</body>"
+                          "<body>فایل مورد نظر یافت</body>"
                           "</html>")
         output_html.close()
     else:
