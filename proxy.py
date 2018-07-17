@@ -64,7 +64,6 @@ def send_request(req, addr):
         except:
             print("time out on receive ack " + str(packet_index % 2) + " packet")
     print('send success', req)
-    return resp
 
 UDP_IP = "127.0.0.1"
 UDP_PORT = 5006
