@@ -45,6 +45,8 @@ UDP_PORT = 5005
 
 sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
 
+sock.settimeout(1)
+
 sock.bind((UDP_IP, UDP_PORT))
 
 
@@ -59,13 +61,22 @@ deadline = None
 whole_data = ''
 
 while receive_data:
-
-    data, addr = sock.recvfrom(1024)  # buffer size is 1024 bytes
-    now = datetime.datetime.now()
-    if deadline and not data and now > deadline:
+    await = True
+    while await:
+        await = False
+        try:
+            data, addr = sock.recvfrom(1024)  # buffer size is 1024 bytes
+        except Exception as e:
+            print('',end='')
+            if deadline:
+                print('',end='')
+                break
+            else:
+                await = True
+            pass
+    if deadline:
         break
-    
-        
+    now = datetime.datetime.now()
     data = data.decode('utf-8')
 
     if not deadline:
@@ -73,17 +84,19 @@ while receive_data:
 
     # extract headers from received packet
     headers = get_headers(data)
+    print(headers)
+
+    print(headers['seq'])
 
     # get the seq number and send it back as ack
     ack = headers['seq']
-    resposne_headers = {'ack':ack}
+    response_headers = str({'ack':ack})
 
     # check for the last packet
     if headers['end_flag']:
         deadline = datetime.datetime.now() + datetime.timedelta(seconds=1)
 
-    sock.sendto(resposne_headers, addr)
-
+    sock.sendto(response_headers.encode(), addr)
 
 # convert data to string to use it
 whole_data = str(whole_data)
@@ -93,7 +106,7 @@ host = find_host(whole_data)
 http_describes = get_http_describes(whole_data)
 
 # check if exists http request in cache
-if collection.find_one({
+if collection.find({
     'host':host,
     'method':method_name,
     'path':path,
