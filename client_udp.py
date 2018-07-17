@@ -7,7 +7,7 @@ import ast
 
 client = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
 client.settimeout(1)
-dstHost = ('127.0.0.1', 5025)
+dstHost = ('127.0.0.1', 5037)
 
 
 def send_request(req):
@@ -39,9 +39,9 @@ def send_request(req):
     end = 0
     while True:
         try:
-            recv, addr = client.recv(1024)
-            print("** ", addr) # todo: check addr
+            recv = client.recv(1024)
             recv = recv.decode('utf-8')
+            print(recv)
             splitted = recv.split('\r\n*\r\n')
             if len(splitted) == 1:
                 continue

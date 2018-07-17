@@ -44,7 +44,6 @@ def get_raw_data(data):
 
 
 def send_request(req, addr):
-    print('****', addr)
     header_length = 30
     packet_data_size = 1024 - header_length
     data = []
@@ -58,18 +57,17 @@ def send_request(req, addr):
             else:
                 end_flag = 0
             header = (str({'seq': packet_index % 2, 'end_flag': end_flag}) + '\r\n*\r\n').encode()
-            client.sendto(header + data[packet_index], addr)
-            recv = client.recv(1024)
+            sock.sendto(header + data[packet_index], addr)
+            recv = sock.recv(1024)
             dict = ast.literal_eval(recv.decode())
-            print('answer: ' + dict)
             if 'ack' in dict.keys() and dict['ack'] == packet_index % 2:
                 packet_index += 1
-        except:
-            print("time out on receive ack " + str(packet_index % 2) + " packet")
+        except Exception as e:
+            print("error on {}: {}".format(packet_index%2, e))
     print('send success', req)
 
 UDP_IP = "127.0.0.1"
-UDP_PORT = 5025
+UDP_PORT = 5037
 
 sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
 
@@ -154,7 +152,7 @@ if False and collection.find({
         'path': path,
         'http_version': http_version
     })
-    send_request(http_response['data'], addr)
+    send_request(http_response['data'].encode(), addr)
 else:
 
     # open a TCP connection to send HTTP request
@@ -208,5 +206,4 @@ else:
     # })
 
     proxy_socket.close()
-    print("tor", addr)
-    send_request(response, addr)
+    send_request(response.encode(), addr)
