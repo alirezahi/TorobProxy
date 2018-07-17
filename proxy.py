@@ -43,8 +43,33 @@ def get_raw_data(data):
     return '\n'.join(str(data).splitlines()[2:])
 
 
+def send_request(req, addr):
+    print('****', addr)
+    header_length = 30
+    packet_data_size = 1024 - header_length
+    data = []
+    for i in range(0, int(len(req)/packet_data_size) + 1):
+        data.append(req[i * packet_data_size: (i+1) * packet_data_size])
+    packet_index = 0
+    while packet_index <= int(len(req)/packet_data_size):
+        try:
+            if packet_index == int(len(req)/packet_data_size):
+                end_flag = 1
+            else:
+                end_flag = 0
+            header = (str({'seq': packet_index % 2, 'end_flag': end_flag}) + '\r\n*\r\n').encode()
+            client.sendto(header + data[packet_index], addr)
+            recv = client.recv(1024)
+            dict = ast.literal_eval(recv.decode())
+            print('answer: ' + dict)
+            if 'ack' in dict.keys() and dict['ack'] == packet_index % 2:
+                packet_index += 1
+        except:
+            print("time out on receive ack " + str(packet_index % 2) + " packet")
+    print('send success', req)
+
 UDP_IP = "127.0.0.1"
-UDP_PORT = 5016
+UDP_PORT = 5020
 
 sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
 
@@ -60,6 +85,8 @@ http_version = '1.1'
 receive_data = True
 
 deadline = None
+
+last_ack = ''
 
 whole_data = ''
 
@@ -81,30 +108,34 @@ while receive_data:
     if deadline:
         break
     now = datetime.datetime.now()
-    data = data.decode('utf-8')
+    try:
+        data = data.decode('utf-8')
 
-    if not deadline:
-        whole_data += get_raw_data(data)
+        # extract headers from received packet
+        headers = get_headers(data)
 
-    # extract headers from received packet
-    headers = get_headers(data)
-    print(headers)
+        # get the seq number and send it back as ack
+        ack = headers['seq']
+        response_headers = str({'ack':ack})
 
-    print(headers['seq'])
+        if not deadline and ack != last_ack:
+            whole_data += get_raw_data(data)
 
-    # get the seq number and send it back as ack
-    ack = headers['seq']
-    response_headers = str({'ack':ack})
+        last_ack = ack
 
-    # check for the last packet
-    if headers['end_flag']:
-        deadline = datetime.datetime.now() + datetime.timedelta(seconds=1)
-        print("**", whole_data, '**')
+        # check for the last packet
+        if headers['end_flag']:
+            deadline = datetime.datetime.now() + datetime.timedelta(seconds=1)
 
-    sock.sendto(response_headers.encode(), addr)
+        sock.sendto(response_headers.encode(), addr)
+    except:
+        pass
+
 
 # convert data to string to use it
 whole_data = str(whole_data)
+
+
 
 #find and extract the host address, method and http version to use it
 host = find_host(whole_data)
@@ -123,8 +154,7 @@ if False and collection.find({
         'path': path,
         'http_version': http_version
     })
-    for data_packet in http_response['packets']:
-        sent = sock.sendto(data_packet, addr)
+    send_request(http_response['data'], addr)
 else:
 
     # open a TCP connection to send HTTP request
@@ -142,25 +172,30 @@ else:
     proxy_socket.send(request_header)
 
     response = ''
-    http_data = []
 
-    while True:
+    await = True
+    while await:
         # send http request to main network
+        await = False
         recv = proxy_socket.recv(1024)
+        try:
+            data, addr = sock.recvfrom(1024)  # buffer size is 1024 bytes
+        except Exception as e:
+            # end the connection if nothing is received
+            break
 
         # end the connection if nothing is received
         if not recv:
             break
         
-        http_data.append(recv)
         
         # send the received data to the client
         sent = sock.sendto(recv, addr)
 
-        # This is just for my debug :)))))))
         response += str(recv)
         print(str(recv))
         print('')
+    print('wefwef')
 
     # add data to cache to use it later
     collection.insert_one({
@@ -168,7 +203,9 @@ else:
         'method': method_name,
         'path': path,
         'http_version': http_version,
-        'packets':http_data
+        'data':response
     })
 
     proxy_socket.close()
+    print("tor", addr)
+    send_request(response, addr)
