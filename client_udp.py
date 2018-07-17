@@ -7,7 +7,7 @@ import ast
 
 client = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
 client.settimeout(1)
-dstHost = ('127.0.0.1', 5005)
+dstHost = ('127.0.0.1', 5016)
 
 
 def send_request(req):
@@ -24,25 +24,45 @@ def send_request(req):
             else:
                 end_flag = 0
             header = (str({'seq': packet_index % 2, 'end_flag': end_flag}) + '\r\n*\r\n').encode()
-            client.sendto(header + data[packet_index], dstHost)
+            client.sendto(header + data[packet_index], dstHost)  # todo: check whether proxy check seq or not
             recv = client.recv(1024)
             dict = ast.literal_eval(recv.decode())
-            print('answer: ' + dict)
+            # print('answer: ' , dict)
             if 'ack' in dict.keys() and dict['ack'] == packet_index % 2:
                 packet_index += 1
+                print("ack received")
         except Exception as e:
             print("error on {}: {}".format(packet_index%2, e))
     print('send success `', req, "`")
     resp = ""
-    # while True:
-    #     while True:
-    #         try:
-    #             recv = client.recv(1024)
-    #             print('a: ' + recv.decode())
-    #             resp += recv.decode()
-    #             break
-    #         except:
-    #             print("time out on receive packets")
+    last_seq = -1
+    end = 0
+    while True:
+        try:
+            recv, addr = client.recv(1024)
+            print("** ", addr) # todo: check addr
+            recv = recv.decode('utf-8')
+            splitted = recv.split('\r\n*\r\n')
+            if len(splitted) == 1:
+                continue
+            headers = ast.literal_eval(splitted[0])
+            if 'seq' in headers.keys() and 'end_flag' in headers.keys():
+                seq = headers['seq']
+                end_flag = headers['end_flag']
+                if seq != last_seq:
+                    last_seq = seq
+                    data = ''
+                    for x in splitted[1:]:
+                        data += x
+                    resp += data
+                    if end_flag == 1:
+                        end = 1
+                #todo: send ack
+        except Exception as e:
+            print('error on receiving: ', e)
+            if end == 1 and isinstance(e, socket.timeout):
+                break
+
     return resp
 
 
@@ -63,7 +83,6 @@ def get_host_and_path(url):
 
 def http_request(http_content):
     msg = send_request(http_content.encode())
-    return  # todo
     print("msg: ", msg)
     code = int(msg.split(" ")[1])
     if code == 200:
