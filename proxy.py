@@ -84,6 +84,8 @@ receive_data = True
 
 deadline = None
 
+last_ack = ''
+
 whole_data = ''
 
 while receive_data:
@@ -106,18 +108,17 @@ while receive_data:
     try:
         data = data.decode('utf-8')
 
-        if not deadline:
-            whole_data += get_raw_data(data)
-
         # extract headers from received packet
         headers = get_headers(data)
-        print(headers)
-
-        print(headers['seq'])
 
         # get the seq number and send it back as ack
         ack = headers['seq']
         response_headers = str({'ack':ack})
+
+        if not deadline and ack != last_ack:
+            whole_data += get_raw_data(data)
+
+        last_ack = ack
 
         # check for the last packet
         if headers['end_flag']:
