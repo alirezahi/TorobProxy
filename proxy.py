@@ -2,7 +2,8 @@ import ast
 import datetime
 from pymongo import MongoClient
 import socket
-
+from ports import main_port
+import requests
 
 client = MongoClient('localhost', 27017)
 
@@ -51,23 +52,27 @@ def send_request(req, addr):
         data.append(req[i * packet_data_size: (i+1) * packet_data_size])
     packet_index = 0
     while packet_index <= int(len(req)/packet_data_size):
+        # print(packet_index,' packet_index')
+        # print(int(len(req)/packet_data_size), ' int(len(req)/packet_data_size)')
         try:
             if packet_index == int(len(req)/packet_data_size):
                 end_flag = 1
             else:
                 end_flag = 0
-            header = (str({'seq': packet_index % 2, 'end_flag': end_flag}) + '\r\n*\r\n').encode()
+            header = (str({'seq': packet_index % 2, 'end_flag': end_flag}) + '\r\n*\r\n').encode('utf-8')
             sock.sendto(header + data[packet_index], addr)
             recv = sock.recv(1024)
-            dict = ast.literal_eval(recv.decode())
+            dict = ast.literal_eval(recv.decode('utf-8'))
+            # print('answer: ' , dict)
             if 'ack' in dict.keys() and dict['ack'] == packet_index % 2:
                 packet_index += 1
         except Exception as e:
             print("error on {}: {}".format(packet_index%2, e))
-    print('send success', req)
+    print('send success')
+
 
 UDP_IP = "127.0.0.1"
-UDP_PORT = 5037
+UDP_PORT = main_port
 
 sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
 
@@ -94,7 +99,7 @@ while receive_data:
         await = False
         try:
             data, addr = sock.recvfrom(1024)  # buffer size is 1024 bytes
-            print(addr)
+            # print(addr)
         except Exception as e:
             print('',end='')
             if deadline:
@@ -125,7 +130,7 @@ while receive_data:
         if headers['end_flag']:
             deadline = datetime.datetime.now() + datetime.timedelta(seconds=1)
 
-        sock.sendto(response_headers.encode(), addr)
+        sock.sendto(response_headers.encode('utf-8'), addr)
     except:
         pass
 
@@ -139,6 +144,7 @@ whole_data = str(whole_data)
 host = find_host(whole_data)
 http_describes = get_http_describes(whole_data)
 
+print('here')
 # check if exists http request in cache
 if False and collection.find({
     'host':host,
@@ -146,14 +152,16 @@ if False and collection.find({
     'path':path,
     'http_version': http_version
     }).count() > 0:
+    print('found in cache')
     http_response = collection.find_one({
         'host': host,
         'method': method_name,
         'path': path,
         'http_version': http_version
     })
-    send_request(http_response['data'].encode(), addr)
+    send_request(http_response['data'].encode('utf-8'), addr)
 else:
+
 
     # open a TCP connection to send HTTP request
     proxy_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
@@ -164,37 +172,48 @@ else:
     server_address = (host, 80)
 
     # connect to server
-    proxy_socket.connect(server_address)
-
+    try:
+        proxy_socket.connect(server_address)
+    except:
+        print('undefined host')
+        proxy_socket.close()
+        send_request("<html>"
+                          "<head><meta charset=\"utf-8\"></head>"
+                          "<body>هاست مورد نظر یافت نشد :(</body>"
+                          "</html>".encode('utf-8'), addr)
+        exit()
     # sending ideal request to the connected server
     http_request = str(http_describes + '\r\nHost: ' + host + '\r\n\r\n')
-    request_header = http_request.encode()
-    proxy_socket.send(request_header)
+    path = http_request.split(' ')[1]
+    # request_header = http_request.encode('utf-8')
+    # proxy_socket.send(request_header)
+    r = requests.get('http://'+host+path)
+    if r.status_code == 404:
+        response = "<html>"+"<head><meta charset=\"utf-8\"></head>"+"<body>فایل مورد نظر یافت نشد :(</body>"+"</html>";
+    else:
+        response = r.text
 
-    response = ''
-
-    await = True
-    while await:
-        # send http request to main network
-        await = False
-        try:
-            recv = proxy_socket.recv(1024)
-        except Exception as e:
-            # end the connection if nothing is received
-            break
-
-        # end the connection if nothing is received
-        if not recv:
-            break
-        
-        
-        # send the received data to the client
-        sent = sock.sendto(recv, addr)
-
-        response += str(recv)
-        print(str(recv))
-        print('')
-    print('wefwef')
+    # await = True
+    # while await:
+    #     # send http request to main network
+    #     await = False
+    #     try:
+    #         recv = proxy_socket.recv(1024)
+    #     except:
+    #         # end the connection if nothing is received
+    #         break
+    #
+    #     # end the connection if nothing is received
+    #     if not recv:
+    #         break
+    #
+    #
+    #     # send the received data to the client
+    #     sent = sock.sendto(recv, addr)
+    #
+    #     response += str(recv)
+    # print(str(response))
+    print('data received from server')
 
     # add data to cache to use it later
     # collection.insert_one({
@@ -206,4 +225,4 @@ else:
     # })
 
     proxy_socket.close()
-    send_request(response.encode(), addr)
+    send_request(response.encode('utf-8'), addr)

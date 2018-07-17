@@ -2,12 +2,13 @@
 # -*- coding: utf-8 -*-
 # a simple udp client
 import socket
-import traceback
 import ast
+from ports import main_port
+import codecs
 
 client = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
 client.settimeout(1)
-dstHost = ('127.0.0.1', 5037)
+dstHost = ('127.0.0.1', main_port)
 
 
 def send_request(req):
@@ -23,10 +24,10 @@ def send_request(req):
                 end_flag = 1
             else:
                 end_flag = 0
-            header = (str({'seq': packet_index % 2, 'end_flag': end_flag}) + '\r\n*\r\n').encode()
+            header = (str({'seq': packet_index % 2, 'end_flag': end_flag}) + '\r\n*\r\n').encode('utf-8')
             client.sendto(header + data[packet_index], dstHost)  # todo: check whether proxy check seq or not
             recv = client.recv(1024)
-            dict = ast.literal_eval(recv.decode())
+            dict = ast.literal_eval(recv.decode('utf-8'))
             # print('answer: ' , dict)
             if 'ack' in dict.keys() and dict['ack'] == packet_index % 2:
                 packet_index += 1
@@ -40,7 +41,7 @@ def send_request(req):
     while True:
         try:
             recv = client.recv(1024)
-            recv = recv.decode('utf-8')
+            recv = recv.decode('utf-8', errors='ignore')
             print(recv)
             splitted = recv.split('\r\n*\r\n')
             if len(splitted) == 1:
@@ -57,9 +58,11 @@ def send_request(req):
                     resp += data
                     if end_flag == 1:
                         end = 1
-                #todo: send ack
+                client.sendto(str({'ack': seq}).encode('utf-8'), dstHost)
+                print('ackkk sendedd')
         except Exception as e:
             print('error on receiving: ', e)
+            print(recv)
             if end == 1 and isinstance(e, socket.timeout):
                 break
 
@@ -82,21 +85,26 @@ def get_host_and_path(url):
 
 
 def http_request(http_content):
-    msg = send_request(http_content.encode())
+    msg = send_request(http_content.encode('utf-8'))
+    output_html = codecs.open("index.html", "w", 'utf-8')
+    output_html.write(msg)
+    output_html.close()
+    return msg
     print("msg: ", msg)
     code = int(msg.split(" ")[1])
     if code == 200:
         print('status: ok')
-        html_data = ''
-        splitted = msg.split('<!doctype html>')
-        for x in splitted[1:]:
-            html_data += '<!doctype html>' + x
+        splitted = msg.split('\\r\\n\\r\\n\\r\\n\\r\\n')
+        html_data = splitted[1]
+        for x in splitted[2:]:
+            html_data += '\\r\\n\\r\\n\\r\\n\\r\\n' + x
         output_html = open("index.html", "w")
         output_html.write(html_data)
         output_html.close()
     elif code == 301 or code == 302:
         print('status: redirect')
-        url = msg.split("Location: ")[1].split("\r")[0]
+        print(msg.split("Location: ")[1].split('\\r'))
+        url = msg.split("Location: ")[1].split('\\r')[0]
         host, path = get_host_and_path(url)
         new_http_content = 'GET ' + path + ' HTTP/1.1\r\nHost: ' + host + '\r\n'
         http_request(new_http_content)
@@ -118,5 +126,5 @@ def http_request(http_content):
         output_html.close()
 
 
-content = 'GET / HTTP/1.1\r\nHost: aut.ac.ir\r\n'
+content = 'GET /aa HTTP/1.1\r\nHost: farsnews.com\r\n'
 http_request(content)
