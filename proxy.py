@@ -151,8 +151,7 @@ if collection.find({
         'path': path,
         'http_version': http_version
     })
-    for data_packet in http_response['data']:
-        sent = sock.sendto(data_packet, addr)
+    send_request(http_response['data'], addr)
 else:
 
     # open a TCP connection to send HTTP request
@@ -205,5 +204,4 @@ else:
     })
 
     proxy_socket.close()
-    print('adsf')
     send_request(response, addr)
