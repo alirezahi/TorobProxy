@@ -55,8 +55,8 @@ def send_request(req, addr):
             else:
                 end_flag = 0
             header = (str({'seq': packet_index % 2, 'end_flag': end_flag}) + '\r\n*\r\n').encode()
-            client.sendto(header + data[packet_index], addr)
-            recv = client.recv(1024)
+            sock.sendto(header + data[packet_index], addr)
+            recv = sock.recv(1024)
             dict = ast.literal_eval(recv.decode())
             print('answer: ' + dict)
             if 'ack' in dict.keys() and dict['ack'] == packet_index % 2:
