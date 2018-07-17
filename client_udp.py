@@ -4,10 +4,11 @@
 import socket
 import traceback
 import ast
+from ports import main_port
 
 client = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
 client.settimeout(1)
-dstHost = ('127.0.0.1', 5006)
+dstHost = ('127.0.0.1', main_port)
 
 
 def send_request(req):

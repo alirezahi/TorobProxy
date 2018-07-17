@@ -2,6 +2,7 @@ import ast
 import datetime
 from pymongo import MongoClient
 import socket
+from ports import main_port
 
 
 
@@ -66,7 +67,7 @@ def send_request(req, addr):
     print('send success', req)
 
 UDP_IP = "127.0.0.1"
-UDP_PORT = 5006
+UDP_PORT = main_port
 
 sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
 
