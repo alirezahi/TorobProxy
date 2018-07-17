@@ -4,12 +4,12 @@ from pymongo import MongoClient
 import socket
 
 
-
 client = MongoClient('localhost', 27017)
 
 db = client.proxy_db
 
 collection = db.http_collection
+
 
 def find_after(s, first):
     try:

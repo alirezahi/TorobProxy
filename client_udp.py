@@ -30,9 +30,9 @@ def send_request(req):
             print('answer: ' + dict)
             if 'ack' in dict.keys() and dict['ack'] == packet_index % 2:
                 packet_index += 1
-        except:
-            print("time out on receive ack " + str(packet_index % 2) + " packet")
-    print('send success', req)
+        except Exception as e:
+            print("error on {}: {}".format(packet_index%2, e))
+    print('send success `', req, "`")
     resp = ""
     # while True:
     #     while True:
@@ -63,12 +63,15 @@ def get_host_and_path(url):
 
 def http_request(http_content):
     msg = send_request(http_content.encode())
-    return
+    return  # todo
     print("msg: ", msg)
     code = int(msg.split(" ")[1])
     if code == 200:
         print('status: ok')
-        html_data = msg.split("<!doctype html>")[1]
+        html_data = ''
+        splitted = msg.split('<!doctype html>')
+        for x in splitted[1:]:
+            html_data += '<!doctype html>' + x
         output_html = open("index.html", "w")
         output_html.write(html_data)
         output_html.close()
@@ -83,7 +86,7 @@ def http_request(http_content):
         output_html = open("index.html", "w")
         output_html.write("<html>"
                           "<head><meta charset=\"utf-8\"></head>"
-                          "<body>فایل مورد نظر یافت</body>"
+                          "<body>فایل مورد نظر یافت نشد :(</body>"
                           "</html>")
         output_html.close()
     else:
