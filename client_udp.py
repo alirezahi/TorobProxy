@@ -7,7 +7,7 @@ import ast
 
 client = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
 client.settimeout(1)
-dstHost = ('127.0.0.1', 5020)
+dstHost = ('127.0.0.1', 5025)
 
 
 def send_request(req):

@@ -69,7 +69,7 @@ def send_request(req, addr):
     print('send success', req)
 
 UDP_IP = "127.0.0.1"
-UDP_PORT = 5020
+UDP_PORT = 5025
 
 sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
 
@@ -160,6 +160,8 @@ else:
     # open a TCP connection to send HTTP request
     proxy_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
 
+    proxy_socket.settimeout(1)
+
     # set server address and port
     server_address = (host, 80)
 
@@ -177,9 +179,8 @@ else:
     while await:
         # send http request to main network
         await = False
-        recv = proxy_socket.recv(1024)
         try:
-            data, addr = sock.recvfrom(1024)  # buffer size is 1024 bytes
+            recv = proxy_socket.recv(1024)
         except Exception as e:
             # end the connection if nothing is received
             break
@@ -198,13 +199,13 @@ else:
     print('wefwef')
 
     # add data to cache to use it later
-    collection.insert_one({
-        'host': host,
-        'method': method_name,
-        'path': path,
-        'http_version': http_version,
-        'data':response
-    })
+    # collection.insert_one({
+    #     'host': host,
+    #     'method': method_name,
+    #     'path': path,
+    #     'http_version': http_version,
+    #     'data':response
+    # })
 
     proxy_socket.close()
     print("tor", addr)
