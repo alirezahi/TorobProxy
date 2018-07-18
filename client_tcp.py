@@ -8,7 +8,7 @@ soc.settimeout(30)
 soc.connect(('localhost', dns_port))
 
 target = 'mail.google.com'
-req_type = 'cname'
+req_type = 'a'
 server = '8.8.8.8'
 query = {
     'target': target,

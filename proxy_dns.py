@@ -21,7 +21,12 @@ while True:
     data = client_soc.recv(1024)
     data = json.loads(str(data, encoding='utf_8'))
     print(data)
-    if collection.find({
+    print({
+        'target':data['target'],
+        'type':data['type'],
+        'server': data['server']
+    })
+    if False and collection.find({
         'target':data['target'],
         'type':data['type'],
         'server': data['server']
@@ -32,6 +37,7 @@ while True:
             'server': data['server'],
         })
         data['response'] = dns_response['result']
+        print('sdfsdf')
         client_soc.send(bytes(json.dumps(data), encoding='utf_8'))
         client_soc.close()
         continue
@@ -42,7 +48,7 @@ while True:
             myResolver = dns.resolver.Resolver()
             myResolver.nameservers = [data['server']]
             myAnswers = myResolver.query(data['target'], data['type'])
-            if data['type'] == 'A':
+            if data['type'].upper() == 'A':
                 result = [str(x) for x in myAnswers]
             if data['type'].upper() == 'CNAME':
                 result = [str(x.target) for x in myAnswers]    
@@ -57,17 +63,18 @@ while True:
     store = {
         'target': data['target'],
         'type': data['type'],
-        'servevr': data['server'],
+        'server': data['server'],
         'result': result
     }
     response = {
         'target': data['target'],
         'type': data['type'],
-        'servevr': data['server'],
+        'server': data['server'],
         'result': result
     }
 
     collection.insert_one(store)
+    print('response inserted in db')
 
     client_soc.send(bytes(json.dumps(response), encoding='utf_8'))
 
