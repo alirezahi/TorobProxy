@@ -222,7 +222,7 @@ else:
         'method': method_name,
         'path': initial_path,
         'http_version': http_version,
-        'data':response
+        'data':response,
     })
 
     proxy_socket.close()
