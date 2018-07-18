@@ -21,6 +21,11 @@ while True:
     data = client_soc.recv(1024)
     data = json.loads(str(data, encoding='utf_8'))
     print(data)
+    print({
+        'target':data['target'],
+        'type':data['type'],
+        'server': data['server']
+    })
     if collection.find({
         'target':data['target'],
         'type':data['type'],
@@ -32,6 +37,7 @@ while True:
             'server': data['server'],
         })
         data['response'] = dns_response['result']
+        print('sdfsdf')
         client_soc.send(bytes(json.dumps(data), encoding='utf_8'))
         client_soc.close()
         continue
@@ -57,17 +63,18 @@ while True:
     store = {
         'target': data['target'],
         'type': data['type'],
-        'servevr': data['server'],
+        'server': data['server'],
         'result': result
     }
     response = {
         'target': data['target'],
         'type': data['type'],
-        'servevr': data['server'],
+        'server': data['server'],
         'result': result
     }
 
     collection.insert_one(store)
+    print('asdfsd')
 
     client_soc.send(bytes(json.dumps(response), encoding='utf_8'))
 
