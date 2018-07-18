@@ -146,7 +146,8 @@ http_describes = get_http_describes(whole_data)
 
 print('checking db')
 # check if exists http request in cache
-if False and collection.find({
+initial_path = path
+if collection.find({
     'host':host,
     'method':method_name,
     'path':path,
@@ -216,13 +217,13 @@ else:
     print('data received from server')
 
     # add data to cache to use it later
-    # collection.insert_one({
-    #     'host': host,
-    #     'method': method_name,
-    #     'path': path,
-    #     'http_version': http_version,
-    #     'data':response
-    # })
+    collection.insert_one({
+        'host': host,
+        'method': method_name,
+        'path': initial_path,
+        'http_version': http_version,
+        'data':response
+    })
 
     proxy_socket.close()
     send_request(response.encode('utf-8'), addr)
