@@ -4,3 +4,4 @@ test_udp.py
 some_note.txt
 index.html
 .vscode
+__pycache__/*
