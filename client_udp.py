@@ -41,6 +41,7 @@ def send_request(req):
     while True:
         try:
             recv = client.recv(1024)
+            recv.rstrip('\0')
             recv = recv.decode('utf-8', errors='ignore')
             print(recv)
             splitted = recv.split('\r\n*\r\n')
@@ -126,5 +127,5 @@ def http_request(http_content):
         output_html.close()
 
 
-content = 'GET / HTTP/1.1\r\nHost: farsnews.com\r\n'
+content = 'GET /aut/upload/SL/PT/173.jpg HTTP/1.1\r\nHost: aut.ac.ir\r\n'
 http_request(content)

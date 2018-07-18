@@ -20,6 +20,7 @@ while True:
 
     try:
         data = soc.recv(1024)
+        data.rstrip('\0')
         print(data)
         break
     except Exception as e:

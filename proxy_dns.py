@@ -19,6 +19,7 @@ soc.listen(1)
 while True:
     client_soc, addr = soc.accept()
     data = client_soc.recv(1024)
+    data.rstrip('\0')
     data = json.loads(str(data, encoding='utf_8'))
     print(data)
     print({
@@ -37,17 +38,18 @@ while True:
             'server': data['server'],
         })
         data['response'] = dns_response['result']
-        print('sdfsdf')
         client_soc.send(bytes(json.dumps(data), encoding='utf_8'))
         client_soc.close()
         continue
     print('requested from server')
     result = []
+    authoritative = False
     try:
         while not result:
             myResolver = dns.resolver.Resolver()
             myResolver.nameservers = [data['server']]
             myAnswers = myResolver.query(data['target'], data['type'])
+            authoritative = bin(myAnswers.response.flags)[7]
             if data['type'].upper() == 'A':
                 result = [str(x) for x in myAnswers]
             if data['type'].upper() == 'CNAME':
@@ -64,16 +66,18 @@ while True:
         'target': data['target'],
         'type': data['type'],
         'server': data['server'],
-        'result': result
+        'result': result,
+        'authoritative':authoritative
     }
     response = {
         'target': data['target'],
         'type': data['type'],
         'server': data['server'],
-        'result': result
+        'result': result,
+        'authoritative':authoritative
     }
 
-    collection.insert_one(store)
+    # collection.insert_one(store)
     print('response inserted in db')
 
     client_soc.send(bytes(json.dumps(response), encoding='utf_8'))
