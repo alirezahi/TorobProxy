@@ -1,3 +1,3 @@
-main_port = 5020
+main_port = 5022
 
-dns_port = 8554
+dns_port = 8553

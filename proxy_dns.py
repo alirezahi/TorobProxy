@@ -24,19 +24,17 @@ while True:
     if collection.find({
         'target':data['target'],
         'type':data['type'],
+        'server': data['server']
     }).count() > 0:
         dns_response = collection.find_one({
             'target':data['target'],
             'type':data['type'],
+            'server': data['server'],
         })
-        if int(time.time()) - dns_response['time'] <= dns_response['ttl']:
-            data['response'] = dns_response['result']
-            client_soc.send(bytes(json.dumps(data), encoding='utf_8'))
-            client_soc.close()
-            continue
-        else:
-            print('ttl is over!')
-            db.remove((request.target == data['target']) & (request.type == data['type']))
+        data['response'] = dns_response['result']
+        client_soc.send(bytes(json.dumps(data), encoding='utf_8'))
+        client_soc.close()
+        continue
     print('requested from server')
     result = []
     try:
@@ -44,7 +42,10 @@ while True:
             myResolver = dns.resolver.Resolver()
             myResolver.nameservers = [data['server']]
             myAnswers = myResolver.query(data['target'], data['type'])
-            result = [str(x) for x in myAnswers]
+            if data['type'] == 'A':
+                result = [str(x) for x in myAnswers]
+            if data['type'].upper() == 'CNAME':
+                result = [str(x.target) for x in myAnswers]    
     except dns.exception.Timeout:
         print('time out')
     except dns.resolver.NoAnswer as e:
@@ -56,17 +57,18 @@ while True:
     store = {
         'target': data['target'],
         'type': data['type'],
-        'ttl': ttl,
-        'time': int(time.time()),
+        'servevr': data['server'],
         'result': result
     }
     response = {
-        'result':result
+        'target': data['target'],
+        'type': data['type'],
+        'servevr': data['server'],
+        'result': result
     }
-    print(result)
+
+    collection.insert_one(store)
 
     client_soc.send(bytes(json.dumps(response), encoding='utf_8'))
 
-    data['response'] = result
-    # client_soc.send(bytes(json.dumps(data), encoding='utf_8'))
     client_soc.close()

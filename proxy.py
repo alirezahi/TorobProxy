@@ -144,7 +144,7 @@ whole_data = str(whole_data)
 host = find_host(whole_data)
 http_describes = get_http_describes(whole_data)
 
-print('here')
+print('checking db')
 # check if exists http request in cache
 if False and collection.find({
     'host':host,

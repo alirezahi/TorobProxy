@@ -126,5 +126,5 @@ def http_request(http_content):
         output_html.close()
 
 
-content = 'GET /aa HTTP/1.1\r\nHost: farsnews.com\r\n'
+content = 'GET / HTTP/1.1\r\nHost: farsnews.com\r\n'
 http_request(content)
