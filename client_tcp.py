@@ -7,8 +7,8 @@ soc = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
 soc.settimeout(30)
 soc.connect(('localhost', dns_port))
 
-target = 'google.com'
-req_type = 'A'
+target = 'mail.google.com'
+req_type = 'cname'
 server = '8.8.8.8'
 query = {
     'target': target,
